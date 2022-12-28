@@ -41,3 +41,14 @@ $ npm run start:dev
 # production mode
 $ npm run start:prod
 ```
+
+## Use the endpoint
+
+POST:  `localhost:3000/users`
+
+```
+{
+"username": "admin", 
+"password": "admin"
+}
+```
