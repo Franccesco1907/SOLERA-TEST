@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common/decorators';
+import { UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Users } from 'src/users/entities/user.entity';
+import { Users } from '../entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { UpdateUserDto } from '../dtos/user.dto';
 
@@ -13,26 +14,17 @@ export class UserService {
 
   async findOne(
     payload: UpdateUserDto,
-  ): Promise<UpdateUserDto | { message: string; }> {
-    try {
-      const { username, password } = payload;
-      const saltRounds = 12;
-
-      if (username == undefined || username == '')
-        throw new Error('Username Incorrect!');
-
-      const hash = await bcrypt.hash(password, saltRounds);
-      const isEqual = await bcrypt.compare(password, hash);
-
-      if (!isEqual) throw new Error('Password Incorrect!');
-
-      const user = await this.usersRepository.findOneBy({
-        username: username,
-      });
-      return { fullname: user.fullname };
-    } catch (error) {
-      console.error(`The following error ocurred: ${error}`);
-      return { message: error };
+  ): Promise<Pick<Users, 'fullname'>> {
+    const { username, password } = payload;
+    if (typeof username !== 'string' || !username ||
+        typeof password !== 'string' || !password) {
+      throw new UnauthorizedException('Invalid credentials');
     }
+
+    const user = await this.usersRepository.findOneBy({ username });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    return { fullname: user.fullname };
   }
 }
